@@ -1,91 +1,115 @@
 (function () {
-    let DB
-    // We can use instead "DOMContentLoaded": 
-    // window.addEventListener("load", function(event) {
-    // console.log("Every sources are loaded")    
-    // })
-    document.addEventListener("DOMContentLoaded", () => {
-        createDB()
+    let DB;
 
-        // This function only is going to be working in the case that the DB exist
-        if (window.indexedDB.open("crm", 1)) {
-            toGetClients()
-        }
-    })
+    document.addEventListener('DOMContentLoaded', () => {
+        crearDB();
 
-    // Create the DB of IndexDB
-    function createDB() {
-        const createDB = window.indexedDB.open("crm", 1)
-
-        createDB.onerror = function () {
-            console.log("There was an error")
+        if (window.indexedDB.open('crm', 1)) {
+            obtenerClientes();
         }
 
-        createDB.onsuccess = function () {
-            DB = createDB.result
-            console.log("I am DB", DB)
-        }
+    });
 
-        createDB.onupgradeneeded = function (e) {
-            const db = e.target.result
-            console.log("I am db with e.target.result", db)
-            const objectStore = db.createObjectStore("crm", { keyPath: "id", autoIncrement: true })
+    // Código de IndexedDB
+    function crearDB() {
+        // crear base de datos con la versión 1
+        const crearDB = window.indexedDB.open('crm', 1);
 
-            objectStore.createIndex("name", "name", { unique: false })
-            objectStore.createIndex("email", "email", { unique: true })
-            objectStore.createIndex("phone", "phone", { unique: false })
-            objectStore.createIndex("company", "company", { unique: false })
-            objectStore.createIndex("id", "id", { unique: true })
+        // si hay un error, lanzarlo
+        crearDB.onerror = function () {
+            console.log('Hubo un error');
+        };
 
-            console.log("DB READY AND CREATED")
-        }
+        // si todo esta bien, asignar a database el resultado
+        crearDB.onsuccess = function () {
+            // guardamos el resultado
+            DB = crearDB.result;
+        };
+
+        // este método solo corre una vez
+        crearDB.onupgradeneeded = function (e) {
+            // el evento que se va a correr tomamos la base de datos
+            const db = e.target.result;
+
+
+            // definir el objectstore, primer parametro el nombre de la BD, segundo las opciones
+            // keypath es de donde se van a obtener los indices
+            const objectStore = db.createObjectStore('crm', { keyPath: 'id', autoIncrement: true });
+
+            //createindex, nombre y keypath, 3ro los parametros
+            objectStore.createIndex('nombre', 'nombre', { unique: false });
+            objectStore.createIndex('email', 'email', { unique: true });
+            objectStore.createIndex('telefono', 'telefono', { unique: false });
+            objectStore.createIndex('empresa', 'empresa', { unique: false });
+            objectStore.createIndex('id', 'id', { unique: true });
+
+
+            console.log('Database creada y lista');
+        };
+
     }
 
-    function toGetClients() {
-        const openConexion = window.indexedDB.open("crm", 1)
 
-        openConexion.onerror = function () {
-            console.log("There was an error in the conexion with the DB")
-        }
+    function obtenerClientes() {
 
-        openConexion.onsuccess = function () {
-            DB = openConexion.result
+        let abrirConexion = window.indexedDB.open('crm', 1);
 
-            const objectStore = DB.transaction("crm").objectStore("crm")
+        // si hay un error, lanzarlo
+        abrirConexion.onerror = function () {
+            console.log('Hubo un error');
+        };
 
+        // si todo esta bien, asignar a database el resultado
+        abrirConexion.onsuccess = function () {
+            // guardamos el resultado
+            DB = abrirConexion.result;
+
+            const objectStore = DB.transaction('crm').objectStore('crm');
+
+
+            // retorna un objeto request o petición, 
             objectStore.openCursor().onsuccess = function (e) {
-                const cursor = e.target.result // El resultado que se ha ejecutado por medio del evento e
+                // cursor se va a ubicar en el registro indicado para accede ra los datos
+                const cursor = e.target.result;
 
-                if (cursor) { // El cursor lo que hace es iterar sobre los index de la DB
-                 const { name, email, phone, company, id } = cursor.value
+                //  console.log(e.target);
 
-                 const clientList = document.querySelector("#listado-clientes")
-                    clientList.innerHTML += ` 
-                    <tr>
-                        <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-200">
-                            <p class="text-sm leading-5 font-medium text-gray-700 text-lg  font-bold"> ${name} </p>
-                            <p class="text-sm leading-10 text-gray-700"> ${email} </p>
-                        </td>
-                        <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-200 ">
-                            <p class="text-gray-700">${phone}</p>
-                        </td>
-                        <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-200  leading-5 text-gray-700">    
-                            <p class="text-gray-600">${company}</p>
-                        </td>
-                        <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-200 text-sm leading-5">
-                            <a href="editar-cliente.html?id=${id}" class="text-teal-600 hover:text-teal-900 mr-5">Editar</a>
-                            <a href="#" data-cliente="${id}" class="text-red-600 hover:text-red-900">Eliminar</a>
-                        </td>
-                    </tr>
-                `;
+                if (cursor) {
+                    const { nombre, empresa, email, telefono, id } = cursor.value;
 
-                    cursor.continue()
+                    const listadoClientes = document.querySelector('#listado-clientes');
+                    listadoClientes.innerHTML += `
+
+                        <tr>
+                            <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-200">
+                                <p class="text-sm leading-5 font-medium text-gray-700 text-lg  font-bold"> ${nombre} </p>
+                                <p class="text-sm leading-10 text-gray-700"> ${email} </p>
+                            </td>
+                            <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-200 ">
+                                <p class="text-gray-700">${telefono}</p>
+                            </td>
+                            <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-200  leading-5 text-gray-700">    
+                                <p class="text-gray-600">${empresa}</p>
+                            </td>
+                            <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-200 text-sm leading-5">
+                                <a href="editar-cliente.html?id=${id}" class="text-teal-600 hover:text-teal-900 mr-5">Editar</a>
+                                <a href="#" data-cliente="${id}" class="text-red-600 hover:text-red-900">Eliminar</a>
+                            </td>
+                        </tr>
+                    `;
+
+                    cursor.continue();
                 } else {
-                    console.log("No hay más registros...")
+                    //  console.log('llegamos al final...');
                 }
-            }
-        }
+            };
+
+
+
+        };
+
+
     }
-})()
 
 
+})();

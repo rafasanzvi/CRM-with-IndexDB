@@ -1,108 +1,114 @@
 (function () {
-    let DB
+    let DB;
 
-    const form = document.querySelector("#formulario")
+    const formulario = document.querySelector('#formulario');
 
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener('DOMContentLoaded', () => {
+        formulario.addEventListener('submit', validarCliente);
 
-        conectDB()
+        conectarDB();
+    });
 
-        form.addEventListener("submit", validateClient)
-    })
+    function conectarDB() {
+        // ABRIR CONEXIÓN EN LA BD:
 
-    function conectDB() {
-        const openConexion = window.indexedDB.open("crm", 1)
+        let abrirConexion = window.indexedDB.open('crm', 1);
 
-        openConexion.onerror = function () {
-            console.log("There was an error in the conexion with the DB")
-        }
+        // si hay un error, lanzarlo
+        abrirConexion.onerror = function () {
+            console.log('Hubo un error');
+        };
 
-        openConexion.onsuccess = function () {
-            DB = openConexion.result
-        }
+        // si todo esta bien, asignar a database el resultado
+        abrirConexion.onsuccess = function () {
+            // guardamos el resultado
+            DB = abrirConexion.result;
+        };
     }
 
-    function validateClient(e) {
-        e.preventDefault() // It is a submit
 
-        // Read all inputs
-        const name = document.querySelector("#nombre").value
-        const email = document.querySelector("#email").value
-        const phone = document.querySelector("#telefono").value
-        const company = document.querySelector("#empresa").value
+    function validarCliente(e) {
+        e.preventDefault();
 
-        if (name === "" || email === "" || phone === "" || company === "") {
-            printAlert("All fills are obligatory", "error")
 
-            return
+        const nombre = document.querySelector('#nombre').value;
+        const email = document.querySelector('#email').value;
+        const telefono = document.querySelector('#telefono').value;
+        const empresa = document.querySelector('#empresa').value;
+
+        if (nombre === '' || email === '' || telefono === '' || empresa === '') {
+
+
+            return;
         }
 
-        // Create an object with the client information, we will use the known like OBJECT LITERAL
-        const client = {
-            name, //name: name, If the key and the value have the same name we can use it once
-            email, // email: email,
-            phone, // phone: phone,
-            company, // company: company
-            id: Date.now()
-        }
+        // añadir a la BD...
+        // crear un nuevo objeto con toda la info
 
-        //or client.id = Date.now()
+        const cliente = {
+            nombre,
+            email,
+            telefono,
+            empresa
+        };
 
-        createNewClient(client) // Creamos esta función para pasar como un simple parámetro el objeto cliente
+        // Generar un ID único
+        cliente.id = Date.now();
+
+
+
+        crearNuevoCliente(cliente);
     }
 
-    function createNewClient(client) { // Here we have the client object created before
-        let transaction = DB.transaction(["crm"], "readwrite")
+    function crearNuevoCliente(cliente) {
 
-        // To write the object in the DB
-        const objectStore = transaction.objectStore("crm")
 
-        objectStore.add(client)
 
-        transaction.onerror = function () {
-            printAlert("There was an error, Not repeat email", "error")
+        // NUEVO: 
+        const transaction = DB.transaction(['crm'], 'readwrite');
+        const objectStore = transaction.objectStore('crm');
+        // console.log(objectStore);
+        objectStore.add(cliente);
 
-            console.log("Transaction error")
-        }
+        transaction.oncomplete = () => {
+            console.log('Cliente Agregado');
 
-        transaction.oncomplete = function () {
-            console.log("client added")
-
-            printAlert("The client was added perfectly")
+            // Mostrar mensaje de que todo esta bien...
+            imprimirAlerta('Se agregó correctamente');
 
             setTimeout(() => {
-                window.location.href = "index.html"
-            }, 3000)
-        }
+                window.location.href = 'index.html';
+            }, 3000);
+        };
+
+        transaction.onerror = () => {
+            console.log('Hubo un error!');
+            imprimirAlerta('Hubo un Error', 'error');
+        };
     }
 
-    function printAlert(message, type) {
+    function imprimirAlerta(mensaje, tipo) {
+        // Crea el div
 
-        const alert = document.querySelector(".alert") // This alert it is to avoid repeat the error message, if there is something with the class "alert" the code not working, on the other hand if not the code make the div message
+        const divMensaje = document.createElement('div');
+        divMensaje.classList.add("px-4", "py-3", "rounded", "max-w-lg", "mx-auto", "mt-6", "text-center");
 
-        if (!alert) {
-            // Creating the div alert
-            const divMessage = document.createElement("div")
-            divMessage.classList.add("px-4", "py-3", "rounded", "max-w-lg", "mx-auto", "mt-6", "text-center", "boder", "alert")
-
-            // Add class depend the type of error
-            if (type === "error") {
-                divMessage.classList.add("bg-red-100", "border-red-400", "text-red-700")
-            } else {
-                divMessage.classList.add("bg-green-100", "border-green-400", "text-green-700")
-            }
-
-            // Error message 
-            divMessage.textContent = message
-
-            // Add the divMessage to the DOM
-            form.insertBefore(divMessage, document.querySelector("#formulario input[type = submit]"))
-            // We can also use to add div message to the DOM: form.appendChild(divMessage)
-
-            // Delete the error message
-            setTimeout(() => {
-                divMessage.remove()
-            }, 3000)
+        if (tipo === 'error') {
+            divMensaje.classList.add('bg-red-100', "border-red-400", "text-red-700");
+        } else {
+            divMensaje.classList.add('bg-green-100', "border-green-400", "text-green-700");
         }
+
+        // Mensaje de error
+        divMensaje.textContent = mensaje;
+
+        // Insertar en el DOM
+        formulario.appendChild(divMensaje);
+
+        // Quitar el alert despues de 3 segundos
+        setTimeout(() => {
+            divMensaje.remove();
+        }, 3000);
     }
-})()
+
+})();
